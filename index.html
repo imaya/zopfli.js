@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>zopfli.js</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <script src="js/app.js"></script>
+  <style>
+    body {
+      padding-top: 60px;
+    }
+    ol > li {
+      padding-top: 1em;
+      padding-bottom: 1em;
+    }
+    section {
+      padding-top: 1em;
+      padding-bottom: 1em;
+    }
+    img.preview {
+      margin: 10px;
+      border: 1px solid #ccc;
+      box-shadow: 10px 10px 10px rgba(0,0,0,0.1);
+      -moz-box-shadow: 10px 10px 10px rgba(0,0,0,0.1);
+      -webkit-box-shadow: 10px 10px 10px rgba(0,0,0,0.1);
+      -o-box-shadow: 10px 10px 10px rgba(0,0,0,0.1);
+      -ms-box-shadow: 10px 10px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="brand" href="./index.html">zopfli.js</a>
+      <div class="nav-collapse collapse">
+        <ul class="nav">
+          <li>
+            <a href="https://www.github.com/imaya/zopfli.js">GitHub Repository</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+  <div class="span9">
+
+    <header>
+      <div class="page-header">
+        <h1>zopfli.js</h1>
+      </div>
+    </header>
+
+    <section>
+      <h2>About</h2>
+      <p>
+        Porting Zopfli to JavaScript with Emscripten.
+      </p>
+    </section>
+
+    <section>
+      <h2>Demo</h2>
+
+      <ol>
+        <li>
+          <h3>Choose compression type</h3>
+          <div class="btn-toolbar" style="margin: 0;">
+            <div class="btn-group">
+              <button id="compression-type" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                Compression Type
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <!-- dropdown menu links -->
+                <li><a data-value="raw" href="#">Deflate(Raw)</a></li>
+                <li><a data-value="zlib" href="#">Zlib</a></li>
+                <li><a data-value="gzip" href="#">Gzip</a></li>
+                <li><a data-value="png" href="#">PNG Recompression (only PNG file)</a></li>
+              </ul>
+            </div>
+          </div>
+        </li>
+        <li>
+          <h3>Input number of iterations (Zopfli parameter)</h4>
+          <input id="iterations" type="number" value="15" min="1" max="1000"/>
+        </li>
+        <li>
+          <h3>Select file in your computer</h3>
+          <form>
+            <input id="file" type="file" />
+            <input id="filereset" type="reset" style="display: none;"/>
+          </form>
+        </li>
+        <li>
+          <h3>Result</h3>
+          <div id="result">
+
+          </div>
+        </li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+  <div class="modal-header">
+    <h3>Compression</h3>
+  </div>
+  <div class="modal-body">
+    <p id="status">Now Compressing...</p>
+  </div>
+</div>
+
+<script src="http://code.jquery.com/jquery.js"></script>
+<script src="js/bootstrap.min.js"></script>
+</body>
+</html>
