@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="project" default="all" >
+  <property name="emscripten" value="./vendor/emscripten"/>
+  <property name="level" value="ADVANCED_OPTIMIZATIONS"/>
+  <property name="zopfli" value="./zopfli"/>
+  <property name="vendor" value="./vendor"/>
+  <property name="bin" value="./bin"/>
+  <property name="compiler" value="${vendor}/google-closure-compiler/compiler.jar"/>
+  <property name="closure_primitives" value="closure-primitives/base.js"/>
+  <property name="export" value="./export"/>
+  <property name="patch" value="./patch"/>
+
+  <!-- ビルドの事前準備 -->
+  <target name="prebuild" description="ビルドの事前準備を行う">
+     <mkdir dir="${bin}"/>
+  </target>
+
+  <!-- デバッグ用の JS の作成 -->
+  <target name="debug" depends="prebuild">
+    <fileset dir="${zopfli}" includes="*.c" excludes="zopfli_bin.c" id="srcpath"/>
+    <pathconvert property="srcfiles" refid="srcpath" pathsep=" "/>
+    <echo message="${srcfiles}"/>
+
+    <fileset dir="${patch}" includes="*.js" id="patchpath"/>
+    <pathconvert property="patchfiles" refid="patchpath" pathsep=" "/>
+
+    <exec executable="python" failonerror="true">
+      <arg line="${emscripten}/emcc"/>
+      <arg line="-v"/>
+      <arg line="-O2"/>
+      <arg line="-s SAFE_HEAP=1"/>
+      <arg line="-s CORRUPTION_CHECK=1"/>
+      <arg line="-s LINKABLE=1"/>
+      <arg line="-s ALLOW_MEMORY_GROWTH=1"/>
+      <arg line="--pre-js plain_header.js"/>
+      <arg line="${srcfiles}"/>
+      <arg line="export.c"/>
+      <arg line="-o ${bin}/zopfli.debug.js"/>
+      <arg line="--closure 0"/>
+    </exec>
+  </target>
+
+  <!-- 最適化前の JS の作成 -->
+  <target name="plain" depends="prebuild">
+    <fileset dir="${zopfli}" includes="*.c" excludes="zopfli_bin.c" id="srcpath"/>
+    <pathconvert property="srcfiles" refid="srcpath" pathsep=" "/>
+    <echo message="${srcfiles}"/>
+
+    <fileset dir="${patch}" includes="*.js" id="patchpath"/>
+    <pathconvert property="patchfiles" refid="patchpath" pathsep=" "/>
+
+    <exec executable="python" failonerror="true">
+      <arg line="${emscripten}/emcc"/>
+      <arg line="-v"/>
+      <arg line="-O2"/>
+      <arg line="-s LINKABLE=1"/>
+      <arg line="-s ALLOW_MEMORY_GROWTH=1"/>
+      <arg line="--pre-js plain_header.js"/>
+      <arg line="${srcfiles}"/>
+      <arg line="export.c"/>
+      <arg line="-o ${bin}/zopfli.plain.js"/>
+      <arg line="--closure 0"/>
+    </exec>
+  </target>
+
+  <!-- Zlib.RawDeflate の単体ビルド -->
+  <target name="rawdeflate" depends="plain,prebuild">
+    <!-- 出力ファイル名 -->
+    <local name="outfile"/>
+    <property name="outfile" value="${bin}/zopfli.raw.min.js"/>
+    <!-- ビルド(出力先は一時ファイル) -->
+    <java jar="${compiler}" fork="true" failonerror="true">
+      <arg line="--compilation_level=${level}"/>
+      <arg line="--define=goog.DEBUG=false"/>
+      <arg line="--output_wrapper='(function() {%output%}).call(this);'"/>
+      <arg line="--language_in=ECMASCRIPT5"/>
+      <arg line="--js_output_file=${outfile}.tmp"/>
+      <arg line="--js=${export}/rawdeflate.js"/>
+      <arg line="--js=${closure_primitives}"/>
+      <arg line="${bin}/zopfli.plain.js"/>
+      <arg line="${patchfiles}"/>
+    </java>
+    <!-- ライセンスとビルドされたファイルをプロパティとして読み込む -->
+    <local name="license"/>
+    <loadfile property="license" srcfile="./LICENSE.min"/>
+    <local name="output"/>
+    <loadfile property="output" srcfile="${outfile}.tmp"/>
+    <!-- ライセンスとビルドされたファイルの結合 -->
+    <echo file="${outfile}" append="no" message="${license}"/>
+    <echo file="${outfile}" append="yes" message="${output}"/>
+    <fixcrlf file="${outfile}" eol="unix" eof="remove"/>
+    <!-- 一時ファイルの削除 -->
+    <delete file="${outfile}.tmp"/>
+  </target>
+
+  <!-- Zlib.Deflate の単体ビルド -->
+  <target name="deflate" depends="plain,prebuild">
+    <!-- 出力ファイル名 -->
+    <local name="outfile"/>
+    <property name="outfile" value="${bin}/zopfli.zlib.min.js"/>
+    <!-- ビルド(出力先は一時ファイル) -->
+    <java jar="${compiler}" fork="true" failonerror="true">
+      <arg line="--compilation_level=${level}"/>
+      <arg line="--define=goog.DEBUG=false"/>
+      <arg line="--output_wrapper='(function() {%output%}).call(this);'"/>
+      <arg line="--language_in=ECMASCRIPT5"/>
+      <arg line="--js_output_file=${outfile}.tmp"/>
+      <arg line="--js=${export}/deflate.js"/>
+      <arg line="--js=${closure_primitives}"/>
+      <arg line="${bin}/zopfli.plain.js"/>
+      <arg line="${patchfiles}"/>
+    </java>
+  <!-- ライセンスとビルドされたファイルをプロパティとして読み込む -->
+    <local name="license"/>
+    <loadfile property="license" srcfile="./LICENSE.min"/>
+    <local name="output"/>
+    <loadfile property="output" srcfile="${outfile}.tmp"/>
+    <!-- ライセンスとビルドされたファイルの結合 -->
+    <echo file="${outfile}" append="no" message="${license}"/>
+    <echo file="${outfile}" append="yes" message="${output}"/>
+    <fixcrlf file="${outfile}" eol="unix" eof="remove"/>
+    <!-- 一時ファイルの削除 -->
+    <delete file="${outfile}.tmp"/>
+  </target>
+
+  <!-- Zlib.Gzip の単体ビルド -->
+  <target name="gzip" depends="plain,prebuild">
+    <!-- 出力ファイル名 -->
+    <local name="outfile"/>
+    <property name="outfile" value="${bin}/zopfli.gzip.min.js"/>
+    <!-- ビルド(出力先は一時ファイル) -->
+    <java jar="${compiler}" fork="true" failonerror="true">
+      <arg line="--compilation_level=${level}"/>
+      <arg line="--define=goog.DEBUG=false"/>
+      <arg line="--output_wrapper='(function() {%output%}).call(this);'"/>
+      <arg line="--language_in=ECMASCRIPT5"/>
+      <arg line="--js_output_file=${outfile}.tmp"/>
+      <arg line="--js=${export}/gzip.js"/>
+      <arg line="--js=${closure_primitives}"/>
+      <arg line="${bin}/zopfli.plain.js"/>
+      <arg line="${patchfiles}"/>
+    </java>
+    <!-- ライセンスとビルドされたファイルをプロパティとして読み込む -->
+    <local name="license"/>
+    <loadfile property="license" srcfile="./LICENSE.min"/>
+    <local name="output"/>
+    <loadfile property="output" srcfile="${outfile}.tmp"/>
+    <!-- ライセンスとビルドされたファイルの結合 -->
+    <echo file="${outfile}" append="no" message="${license}"/>
+    <echo file="${outfile}" append="yes" message="${output}"/>
+    <fixcrlf file="${outfile}" eol="unix" eof="remove"/>
+    <!-- 一時ファイルの削除 -->
+    <delete file="${outfile}.tmp"/>
+  </target>
+
+  <!-- Zopfli すべてのビルド -->
+  <target name="zopfli" depends="plain,prebuild">
+    <!-- 出力ファイル名 -->
+    <local name="outfile"/>
+    <property name="outfile" value="${bin}/zopfli.min.js"/>
+    <!-- ビルド(出力先は一時ファイル) -->
+    <java jar="${compiler}" fork="true" failonerror="true">
+      <arg line="--compilation_level=${level}"/>
+      <arg line="--define=goog.DEBUG=false"/>
+      <arg line="--output_wrapper='(function() {%output%}).call(this);'"/>
+      <arg line="--language_in=ECMASCRIPT5"/>
+      <arg line="--js_output_file=${outfile}.tmp"/>
+      <arg line="--js=${export}/rawdeflate.js"/>
+      <arg line="--js=${export}/deflate.js"/>
+      <arg line="--js=${export}/gzip.js"/>
+      <arg line="--js=${closure_primitives}"/>
+      <arg line="${bin}/zopfli.plain.js"/>
+      <arg line="${patchfiles}"/>
+    </java>
+    <!-- ライセンスとビルドされたファイルをプロパティとして読み込む -->
+    <local name="license"/>
+    <loadfile property="license" srcfile="./LICENSE.min"/>
+    <local name="output"/>
+    <loadfile property="output" srcfile="${outfile}.tmp"/>
+    <!-- ライセンスとビルドされたファイルの結合 -->
+    <echo file="${outfile}" append="no" message="${license}"/>
+    <echo file="${outfile}" append="yes" message="${output}"/>
+    <fixcrlf file="${outfile}" eol="unix" eof="remove"/>
+    <!-- 一時ファイルの削除 -->
+    <delete file="${outfile}.tmp"/>
+  </target>
+
+  <!-- compiler help -->
+  <target name="help">
+    <java jar="${compiler}" fork="true" failonerror="true">
+      <arg line="--help"/>
+    </java>
+  </target>
+
+  <!-- 全て作成 -->
+  <target name="all" depends="debug,plain,rawdeflate,deflate,gzip,zopfli" />
+
+  <!--  削除 -->
+  <target name="clean">
+    <delete file="${depend}"/>
+    <delete dir="${bin}"/>
+  </target>
+
+  <!-- リビルド -->
+  <target name="rebuild" depends="clean,all"/>
+</project>
+<!-- vim: set expandtab ts=2 sw=2: -->

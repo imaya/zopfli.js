@@ -1,0 +1,9 @@
+[submodule "zopfli"]
+	path = zopfli
+	url = https://code.google.com/p/zopfli/
+[submodule "vendor/emscripten"]
+	path = vendor/emscripten
+	url = git://github.com/kripken/emscripten.git
+[submodule "vendor/zlib.js"]
+	path = vendor/zlib.js
+	url = git://github.com/imaya/zlib.js.git
